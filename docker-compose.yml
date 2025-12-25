@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  localnet:
+    image: linera/buildathon:latest
+    container_name: linera_localnet
+    ports:
+      - "8080:8080"
+      - "9001:9001"
+    volumes:
+      - ./linera_data:/root/.linera
+    command: ["linera", "net", "up", "--with-faucet", "--faucet-port", "8080"]
+
+  miniapp:
+    build: .
+    container_name: miniapp
+    ports:
+      - "5173:5173"
+    environment:
+      - FAUCET_URL=http://localnet:8080
+    depends_on:
+      - localnet
