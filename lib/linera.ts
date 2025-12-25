@@ -7,20 +7,3 @@ export const runCommand = (cmd: string): Promise<string> =>
       else resolve(stdout.trim());
     });
   });
-
-export async function createWallet(faucetUrl: string) {
-  await runCommand(`linera wallet init --faucet ${faucetUrl}`);
-  const info = (await runCommand(`linera wallet request-chain --faucet ${faucetUrl}`)).split(" ");
-  return {
-    chainId: info[0],
-    accountId: info[1],
-  };
-}
-
-export async function queryBalance(address: string) {
-  return await runCommand(`linera query-balance ${address}`);
-}
-
-export async function transfer(amount: number, from: string, to: string) {
-  return await runCommand(`linera transfer ${amount} --from ${from} --to ${to}`);
-}
