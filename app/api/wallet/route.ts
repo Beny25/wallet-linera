@@ -1,20 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import { exec } from "child_process";
+import { NextResponse } from "next/server";
+import { runCommand } from "../../../lib/linera";
 
-const runCommand = (cmd: string): Promise<string> =>
-  new Promise((resolve, reject) => {
-    exec(cmd, (err, stdout, stderr) => {
-      if (err) reject(stderr);
-      else resolve(stdout.trim());
-    });
-  });
-
-export async function GET(req: NextRequest) {
+export async function POST() {
   try {
-    // contoh: create wallet + request-chain
-    await runCommand(`linera wallet init --faucet http://localhost:8080`);
-    const info = (await runCommand(`linera wallet request-chain --faucet http://localhost:8080`)).split(" ");
-    return NextResponse.json({ chainId: info[0], accountId: info[1] });
+    const faucetUrl = process.env.NEXT_PUBLIC_FAUCET_URL;
+    // init wallet
+    await runCommand(`linera wallet init --faucet ${faucetUrl}`);
+    // request chain
+    const info = (await runCommand(`linera wallet request-chain --faucet ${faucetUrl}`)).split(" ");
+    const chainId = info[0];
+    const accountId = info[1];
+    // query balance
+    const balance = await runCommand(`linera query-balance ${chainId}:${accountId}`);
+
+    return NextResponse.json({ chainId, accountId, balance });
   } catch (err) {
     return NextResponse.json({ error: err }, { status: 500 });
   }
