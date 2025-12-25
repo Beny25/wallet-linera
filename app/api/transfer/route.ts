@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runCommand } from "../../lib/linera";
-
+import { runCommand } from "../../../lib/linera";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
