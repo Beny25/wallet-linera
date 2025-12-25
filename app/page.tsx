@@ -5,19 +5,19 @@ import WalletCreateForm from "../components/WalletCreateForm";
 import TransferForm from "../components/TransferForm";
 
 export default function Home() {
-  const [wallet, setWallet] = useState<{ chainId: string; accountId: string; balance?: string } | null>(null);
+  const [wallet, setWallet] = useState<{ chainId: string; accountId: string; balance: string } | null>(null);
   const [history, setHistory] = useState<any[]>([]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-8">
       {!wallet ? (
-        <WalletCreateForm faucetUrl={process.env.NEXT_PUBLIC_FAUCET_URL!} onSuccess={setWallet} />
+        <WalletCreateForm onSuccess={setWallet} />
       ) : (
         <div className="text-center p-6 bg-white rounded shadow-md w-full max-w-md">
           <h2 className="text-xl font-bold mb-2">Wallet Created!</h2>
           <p>Chain ID: {wallet.chainId}</p>
           <p>Account ID: {wallet.accountId}</p>
-          <p>Balance: {wallet.balance ?? "0"}</p>
+          <p>Balance: {wallet.balance}</p>
 
           <TransferForm
             walletAddress={`${wallet.chainId}:${wallet.accountId}`}
