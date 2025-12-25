@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { transfer, queryBalance } from "../lib/linera";
 
 type Props = {
   walletAddress: string;
@@ -17,11 +16,15 @@ export default function TransferForm({ walletAddress, onUpdateBalance, onAddHist
   const handleTransfer = async () => {
     setLoading(true);
     try {
-      const res = await transfer(amount, walletAddress, to);
-      onAddHistory({ type: "transfer", from: walletAddress, to, amount, result: res });
-      const balance = await queryBalance(walletAddress);
-      onUpdateBalance(balance);
-      alert("Transfer successful!");
+      const res = await fetch("/api/transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, from: walletAddress, to }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      onAddHistory({ type: "transfer", from: walletAddress, to, amount, result: data.result });
+      onUpdateBalance(data.balance);
     } catch (err) {
       alert("Transfer failed: " + err);
     } finally {
