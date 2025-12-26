@@ -1,22 +1,25 @@
-version: "3.8"
+version: "3.9"
 
 services:
-  localnet:
-    image: linera/buildathon:latest
-    container_name: linera_localnet
-    ports:
-      - "8080:8080"
-      - "9001:9001"
-    volumes:
-      - ./linera_data:/root/.linera
-    command: ["linera", "net", "up", "--with-faucet", "--faucet-port", "8080"]
-
-  miniapp:
+  app:
     build: .
-    container_name: miniapp
     ports:
-      - "5173:5173"
+      - "5173:5173"    # Frontend
+      - "8080:8080"    # Faucet
+      - "9001:9001"    # RPC
+      - "13001:13001"  # Validator
+    volumes:
+      - ./app:/build/app
+      - ./components:/build/components
+      - /root/.linera:/root/.linera
     environment:
-      - FAUCET_URL=http://localnet:8080
-    depends_on:
-      - localnet
+      NODE_ENV: production
+      NEXT_PUBLIC_APP_URL: http://localhost:5173
+      NEXT_PUBLIC_FAUCET_URL: http://localhost:8080
+      NEXT_PUBLIC_RPC_URL: http://localhost:9001
+      NEXT_PUBLIC_VALIDATOR_URL: http://localhost:13001
+      NEXT_TELEMETRY_DISABLED: 1
+      LINERA_WALLET: /root/.linera/wallet.json
+      LINERA_KEYSTORE: /root/.linera/keystore.json
+      LINERA_STORAGE: rocksdb:/root/.linera/client.db
+      
