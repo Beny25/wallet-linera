@@ -1,0 +1,179 @@
+{
+  "chains": {
+    "1dedbd8d81098a1f3d95e333b66e73ac12e3184ec99a5c1f6f407eba33e7678b": {
+      "chain_id": "1dedbd8d81098a1f3d95e333b66e73ac12e3184ec99a5c1f6f407eba33e7678b",
+      "owner": "0x49d93a1b3c9a0820e6f9765d7b2ac66c322523dbc7cc82d165c5166e09753114",
+      "block_hash": null,
+      "timestamp": 1766717835915650,
+      "next_block_height": 0,
+      "pending_proposal": null
+    },
+    "588597830e9513894d87d7fd9e56eb46c824fe9e5aaa36814c2e3eb751f76a97": {
+      "chain_id": "588597830e9513894d87d7fd9e56eb46c824fe9e5aaa36814c2e3eb751f76a97",
+      "owner": null,
+      "block_hash": null,
+      "timestamp": 1766717832485174,
+      "next_block_height": 0,
+      "pending_proposal": null
+    }
+  },
+  "default": "1dedbd8d81098a1f3d95e333b66e73ac12e3184ec99a5c1f6f407eba33e7678b",
+  "genesis_config": {
+    "committee": {
+      "validators": {
+        "035e8e382f03f09a3aa91efa5e84799672f0d2a3bf8b5e1a8d7807c43af7aee5ff": {
+          "network_address": "grpc:localhost:13001",
+          "votes": 100,
+          "account_public_key": {
+            "Ed25519": "a31706c6d3d0ca5e53e29e152ef49a5e90061226ec3bc54bf7a3526be2bf4e99"
+          }
+        }
+      },
+      "total_votes": 100,
+      "quorum_threshold": 67,
+      "validity_threshold": 34,
+      "policy": {
+        "wasm_fuel_unit": "0.",
+        "evm_fuel_unit": "0.",
+        "read_operation": "0.",
+        "write_operation": "0.",
+        "byte_runtime": "0.",
+        "byte_read": "0.",
+        "byte_written": "0.",
+        "blob_read": "0.",
+        "blob_published": "0.",
+        "blob_byte_read": "0.",
+        "blob_byte_published": "0.",
+        "byte_stored": "0.",
+        "operation": "0.",
+        "operation_byte": "0.",
+        "message": "0.",
+        "message_byte": "0.",
+        "service_as_oracle_query": "0.",
+        "http_request": "0.",
+        "maximum_wasm_fuel_per_block": 18446744073709551615,
+        "maximum_evm_fuel_per_block": 18446744073709551615,
+        "maximum_service_oracle_execution_ms": 18446744073709551615,
+        "maximum_block_size": 18446744073709551615,
+        "maximum_bytecode_size": 18446744073709551615,
+        "maximum_blob_size": 18446744073709551615,
+        "maximum_published_blobs": 18446744073709551615,
+        "maximum_block_proposal_size": 18446744073709551615,
+        "maximum_bytes_read_per_block": 18446744073709551615,
+        "maximum_bytes_written_per_block": 18446744073709551615,
+        "maximum_oracle_response_bytes": 18446744073709551615,
+        "maximum_http_response_bytes": 18446744073709551615,
+        "http_request_timeout_ms": 18446744073709551615,
+        "http_request_allow_list": [
+          "localhost"
+        ]
+      }
+    },
+    "timestamp": 1766717832485174,
+    "chains": [
+      {
+        "origin": {
+          "Root": 0
+        },
+        "timestamp": 1766717832485174,
+        "config": {
+          "ownership": {
+            "super_owners": [],
+            "owners": {
+              "0x58b583c89e81a9c7226e6d8e44c1b7e7c78282e2e3d95c4aedc6b0528d8d4380": 100
+            },
+            "multi_leader_rounds": 2,
+            "open_multi_leader_rounds": false,
+            "timeout_config": {
+              "fast_round_duration": null,
+              "base_timeout": 10000000,
+              "timeout_increment": 1000000,
+              "fallback_duration": 18446744073709551615
+            }
+          },
+          "epoch": "0",
+          "min_active_epoch": "0",
+          "max_active_epoch": "0",
+          "balance": "1000000.",
+          "application_permissions": {
+            "execute_operations": null,
+            "mandatory_applications": [],
+            "close_chain": [],
+            "change_application_permissions": [],
+            "call_service_as_oracle": null,
+            "make_http_requests": null
+          }
+        }
+      },
+      {
+        "origin": {
+          "Root": 1
+        },
+        "timestamp": 1766717832485174,
+        "config": {
+          "ownership": {
+            "super_owners": [],
+            "owners": {
+              "0x10bc8125ec3a663f7e7c4b6b4abbda672a1cf5ac7b6fa18c84e0dcbad946c95b": 100
+            },
+            "multi_leader_rounds": 2,
+            "open_multi_leader_rounds": false,
+            "timeout_config": {
+              "fast_round_duration": null,
+              "base_timeout": 10000000,
+              "timeout_increment": 1000000,
+              "fallback_duration": 18446744073709551615
+            }
+          },
+          "epoch": "0",
+          "min_active_epoch": "0",
+          "max_active_epoch": "0",
+          "balance": "1000000.",
+          "application_permissions": {
+            "execute_operations": null,
+            "mandatory_applications": [],
+            "close_chain": [],
+            "change_application_permissions": [],
+            "call_service_as_oracle": null,
+            "make_http_requests": null
+          }
+        }
+      },
+      {
+        "origin": {
+          "Root": 2
+        },
+        "timestamp": 1766717832485174,
+        "config": {
+          "ownership": {
+            "super_owners": [],
+            "owners": {
+              "0x77f41be77fe260482de412467ef92067ef412c9f7148f2d669ef92283ab88282": 100
+            },
+            "multi_leader_rounds": 2,
+            "open_multi_leader_rounds": false,
+            "timeout_config": {
+              "fast_round_duration": null,
+              "base_timeout": 10000000,
+              "timeout_increment": 1000000,
+              "fallback_duration": 18446744073709551615
+            }
+          },
+          "epoch": "0",
+          "min_active_epoch": "0",
+          "max_active_epoch": "0",
+          "balance": "1000000.",
+          "application_permissions": {
+            "execute_operations": null,
+            "mandatory_applications": [],
+            "close_chain": [],
+            "change_application_permissions": [],
+            "call_service_as_oracle": null,
+            "make_http_requests": null
+          }
+        }
+      }
+    ],
+    "network_name": "linera-2025-12-26T02:57:12"
+  }
+}

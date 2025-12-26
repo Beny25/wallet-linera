@@ -14,12 +14,23 @@ services:
       - /root/.linera:/root/.linera
     environment:
       NODE_ENV: production
+<<<<<<< HEAD
       NEXT_PUBLIC_APP_URL: http://localhost:5173
       NEXT_PUBLIC_FAUCET_URL: http://localhost:8080
       NEXT_PUBLIC_RPC_URL: http://localhost:9001
       NEXT_PUBLIC_VALIDATOR_URL: http://localhost:13001
+=======
+      NEXT_PUBLIC_APP_URL: http://208.76.40.208:5173
+      NEXT_PUBLIC_FAUCET_URL: http://208.76.40.208:8080
+      NEXT_PUBLIC_RPC_URL: http://208.76.40.208:9001
+      NEXT_PUBLIC_VALIDATOR_URL: http://208.76.40.208:13001
+>>>>>>> 86d35628 (Merge updates from GitHub)
       NEXT_TELEMETRY_DISABLED: 1
       LINERA_WALLET: /root/.linera/wallet.json
       LINERA_KEYSTORE: /root/.linera/keystore.json
       LINERA_STORAGE: rocksdb:/root/.linera/client.db
+<<<<<<< HEAD
       
+=======
+
+>>>>>>> 86d35628 (Merge updates from GitHub)
