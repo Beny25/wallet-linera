@@ -1,35 +1,50 @@
 # Base image Rust + Node
 FROM rust:1.86-slim
 
-Install Linux dependencies
+SHELL ["bash", "-c"]
+
+# Install dependencies
 RUN apt-get update && apt-get install -y \
-    git pkg-config protobuf-compiler clang make curl findutils gnupg \
-    && rm -rf /var/lib/apt/lists/*
+    pkg-config \
+    protobuf-compiler \
+    clang \
+    make \
+    curl \
+    findutils \
+ && rm -rf /var/lib/apt/lists/*
 
-Clone Linera repo (testnet-conway branch)
-RUN git clone --branch testnet-conway https://github.com/linera-io/linera.git /linera
+# Install Linera CLI / services
+RUN cargo install --locked \
+    linera-service@0.15.5 \
+    linera-storage-service@0.15.5
 
-Build linera binaries
-RUN cd /linera \
-    && cargo install --path service \
-    && cargo install --path storage-service
-
-Install Node.js 20 & pnpm
+# Install Node + pnpm
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g pnpm
+ && apt-get install -y nodejs \
+ && npm install -g pnpm
 
-Set working directory for frontend
+# Set working directory
 WORKDIR /build
 
-Copy project files
-COPY . .
+# Copy run script
+COPY run.bash /build/run.bash
+RUN chmod +x /build/run.bash
 
-Install frontend dependencies
-RUN pnpm install
+# Copy frontend / MiniApp source
+COPY package.json pnpm-lock.yaml package-lock.json ./
+COPY app ./app
+COPY components ./components
+COPY lib ./lib
+COPY public ./public
+COPY scripts ./scripts
+COPY next.config.ts tsconfig.json ./
+COPY postcss.config.mjs eslint.config.mjs ./
 
-Expose default frontend port
+# Expose ports
 EXPOSE 5173
+EXPOSE 8080
+EXPOSE 9001
+EXPOSE 13001
 
-Start frontend
-CMD ["pnpm", "start"]
+# Entrypoint
+ENTRYPOINT ["bash", "/build/run.bash"]
