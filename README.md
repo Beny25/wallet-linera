@@ -1,103 +1,138 @@
 # <img src="https://github.com/linera-io/linera-protocol/assets/1105398/fe08c941-93af-4114-bb83-bcc0eaec95f9" width="250" height="85" />
 
-# Wallet-Linera (Browser Wallet for Linera Microchains)
+# Wallet-Linera  
+**Browser Wallet for Linera Microchains**
 
-[![Twitter](https://img.shields.io/twitter/follow/bandit.base.eth)](https://x.com/Alidepok1)
-
----
-
-## 🚀 What’s Wallet-Linera?
-
-Wallet-Linera is a **browser-based gateway** to Linera microchains.  
-No Rust. No CLI. Just clicks.  
-
-It lets you:
-
-- Generate & manage wallets  
-- View your chain & account IDs  
-- Request testnet tokens via faucet  
-- Send tokens between wallets  
-- Track transaction history directly in your browser  
-
-Perfect for developers, designers, and curious builders who don’t want to touch terminal commands.
+[![Twitter](https://img.shields.io/twitter/follow/bandit.base.eth?style=social)](https://x.com/Alidepok1)
 
 ---
 
-## 🧠 Why it matters
+## 🚀 What is Wallet-Linera?
 
-Linera microchains are awesome, but onboarding via CLI can be scary.  
-Wallet-Linera brings microchains to your browser — friendly, fast, and fun.  
+**Wallet-Linera** is a browser-based wallet interface for **Linera microchains**, designed to make Linera easier to use without requiring users to interact directly with the Rust CLI.
 
----
-
-## ⚙️ Current Progress
-
-- Functional wallet UI: create, load, download, delete  
-- Client-side key storage for quick prototyping  
-- Faucet & transfer flows integrated  
-- Transaction history in localStorage  
-- Copy & max buttons for easy token management  
-- Connected to local Linera validator for testing  
-
-> VPS node & Rust bridge running on port 3000 for API access. Frontend can talk to it via environment variables.
+The frontend runs in the browser, while blockchain operations are handled by a **Rust bridge service** that connects to a Linera node and faucet.
 
 ---
 
-## 🧪 What’s next
+## ✨ Features
 
-- Deploy Linera node & faucet for live network use  
-- Real-time balance updates after faucet/transfer  
-- Simple on-chain interactions (GM, ritual actions)  
-- UX improvements & error handling  
-- Backup & restore wallet securely  
+- Generate & manage Linera wallets  
+- Request a new microchain via faucet  
+- View chain ID, account ID, and balance  
+- Transfer tokens between accounts  
+- Simple REST API powered by Rust (Warp)  
+- Works with local node or VPS deployment  
 
 ---
 
-## 💻 How to Use
+## 🧠 Why this matters
 
+Linera’s microchain model is powerful, but onboarding via CLI can be intimidating.
+
+Wallet-Linera lowers the barrier by:
+- Keeping the user experience in the browser  
+- Delegating Linera CLI execution to a backend service  
+- Enabling fast experimentation with microchains  
+
+This project is an early step toward **user-friendly Linera wallets and MiniApps**.
+
+---
+
+## 🏗 Architecture
+
+Browser (Next.js) ↓ HTTP Rust Bridge (Warp API :3000) ↓ CLI Linera Node + Faucet ↓ Wallet & Keystore (VPS / Local)
+
+> Linera does **not** run in the browser.  
+> All blockchain interactions are executed by the Rust bridge.
+
+---
+
+## 🧪 API Endpoints
+
+| Endpoint | Method | Description |
+|--------|--------|-------------|
+| `/api/wallet` | POST | Initialize wallet & request chain |
+| `/api/balance` | POST | Query balance by chain ID |
+| `/api/transfer` | POST | Transfer tokens |
+
+Example:
 ```bash
-# Clone the repo
-git clone https://github.com/Beny25/wallet-linera.git
+curl -X POST http://<VPS-IP>:3000/api/wallet
 
-# Enter folder
+
+---
+
+🐳 Run with Docker (Recommended)
+
+git clone https://github.com/Beny25/wallet-linera.git
 cd wallet-linera
 
-# Install dependencies
-npm install
+docker compose build
+docker compose up
 
-# Run dev server
-npm run dev
+Open in browser
 
-Open your browser at http://localhost:5173 (or Vercel link if deployed) and start your ritual! ✨
+Frontend: http://<VPS-IP>:5173
+
+API: http://<VPS-IP>:3000
 
 
----
-
-📂 File Structure
-
-/app
-  ├─ page.tsx          # Home page UI
-/components
-  ├─ HeaderBanner.tsx
-  ├─ Footer.tsx
-  ├─ WalletCreateForm.tsx
-  ├─ TransferForm.tsx
-/lib
-  ├─ linera.ts         # Wallet / balance / transfer helpers
-  ├─ share.ts
-/rust-bridge
-  ├─ main.rs           # Warp backend API
+Make sure these ports are open: 5173, 3000, 8080, 13001
 
 
 ---
 
-📝 Safety Notes
+📂 Project Structure
 
-Your private key stays in your browser. Never sent to server.
+/app            # Next.js app routes
+/components     # UI components
+/lib            # Frontend helpers
+/rust-bridge    # Rust Warp API (Linera CLI bridge)
+/scripts        # Faucet & helper scripts
 
-Backup JSON wallet manually if you care about your coins.
 
-Only use testnet tokens for now!
+---
+
+⚙️ Tech Stack
+
+Frontend: Next.js (App Router)
+
+Backend: Rust + Warp
+
+Blockchain: Linera Protocol
+
+Infra: Docker, VPS, optional Nginx
+
+
+
+---
+
+🔐 Security Notes
+
+Wallet keys are stored locally (browser or VPS keystore)
+
+Never use mainnet funds
+
+Testnet / local validator only
+
+This project is experimental
+
+
+
+---
+
+🧭 Roadmap
+
+Stable Testnet Conway integration
+
+Persistent node & validator setup
+
+HTTPS + domain support
+
+Transaction history indexing
+
+Linera MiniApp interactions (GM / Ritual actions)
 
 
 
@@ -106,10 +141,10 @@ Only use testnet tokens for now!
 😄 TL;DR
 
 Less CLI.
-More clicks.
-Same microchains.
+More browser.
+Same Linera microchains.
 
-Building a friendlier way to interact with Linera one browser tab at a time.
+Building a friendlier way to interact with Linera — one browser tab at a time.
 
 
 ---
@@ -118,4 +153,4 @@ Building a friendlier way to interact with Linera one browser tab at a time.
 
 GitHub: https://github.com/Beny25/wallet-linera
 
-- Twitter / X: [@Alidepok1](https://x.com/Alidepok1)
+Twitter / X: @Alidepok1
