@@ -1,60 +1,128 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "react-hot-toast";
 
 type Props = {
   walletAddress: string;
-  onUpdateBalance: (balance: string) => void;
+  balance: string;
+  onUpdateBalance: (bal: string) => void;
   onAddHistory: (tx: any) => void;
 };
 
-export default function TransferForm({ walletAddress, onUpdateBalance, onAddHistory }: Props) {
-  const [amount, setAmount] = useState(0);
+export default function TransferForm({
+  walletAddress,
+  balance,
+  onUpdateBalance,
+  onAddHistory,
+}: Props) {
   const [to, setTo] = useState("");
+  const [amount, setAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
-  const handleTransfer = async () => {
-    setLoading(true);
+  const numericBalance = Number(balance.replace(".", ""));
+
+  const handleMax = () => {
+    if (numericBalance <= 0) {
+      toast.error("Balance empty");
+      return;
+    }
+    setAmount(String(numericBalance));
+  };
+
+  const handleSend = async () => {
+    if (!to || !amount) {
+      toast.error("Recipient & amount required");
+      return;
+    }
+
+    if (Number(amount) <= 0) {
+      toast.error("Amount must be > 0");
+      return;
+    }
+
+    if (Number(amount) > numericBalance) {
+      toast.error("Insufficient balance");
+      return;
+    }
+
     try {
+      setLoading(true);
+
       const res = await fetch("/api/transfer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, from: walletAddress, to }),
+        body: JSON.stringify({
+          from: walletAddress,
+          to,
+          amount,
+        }),
       });
+
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      onAddHistory({ type: "transfer", from: walletAddress, to, amount, result: data.result });
+
       onUpdateBalance(data.balance);
-    } catch (err) {
-      alert("Transfer failed: " + err);
+
+      onAddHistory({
+        type: "send",
+        amount,
+        from: walletAddress,
+        to,
+        result: "success",
+        time: new Date().toISOString(),
+      });
+
+      setAmount("");
+      setTo("");
+      toast.success("Transfer success!");
+    } catch (err: any) {
+      toast.error(err.message || "Transfer failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="border p-4 rounded shadow-md max-w-md mx-auto mt-4">
+    <div className="mt-4 space-y-2 text-sm">
+      <h3 className="font-semibold">Send</h3>
+
+      {/* Recipient */}
       <input
         type="text"
-        placeholder="Recipient"
+        placeholder="Recipient Chain ID"
         value={to}
         onChange={(e) => setTo(e.target.value)}
-        className="border p-1 rounded w-full mb-2"
+        className="w-full border rounded-lg p-2 text-xs"
       />
-      <input
-        type="number"
-        placeholder="Amount"
-        value={amount}
-        onChange={(e) => setAmount(Number(e.target.value))}
-        className="border p-1 rounded w-full mb-2"
-      />
+
+      {/* Amount + MAX */}
+      <div className="flex gap-2">
+        <input
+          type="number"
+          min="1"
+          step="1"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="flex-1 border rounded-lg p-2"
+        />
+        <button
+          type="button"
+          onClick={handleMax}
+          className="px-3 rounded-lg bg-gray-200 hover:bg-gray-300 text-xs font-semibold"
+        >
+          MAX
+        </button>
+      </div>
+
       <button
-        onClick={handleTransfer}
+        onClick={handleSend}
         disabled={loading}
-        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+        className="w-full bg-blue-600 text-white rounded-lg p-2 mt-1 hover:bg-blue-700 disabled:opacity-50"
       >
         {loading ? "Sending..." : "Send"}
       </button>
     </div>
   );
 }
+

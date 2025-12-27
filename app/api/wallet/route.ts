@@ -19,8 +19,9 @@ export async function POST() {
 
     const [chainId, accountId] = output.trim().split(/\s+/);
 
+    // query balance
     const balance = await runCommand(
-      `linera --wallet ${walletPath} query-balance ${chainId}:${accountId}`
+      `linera --wallet ${walletPath} query-balance ${chainId}`
     );
 
     return NextResponse.json({ chainId, accountId, balance });

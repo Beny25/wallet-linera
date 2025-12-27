@@ -33,8 +33,4 @@ echo "NODE_ENV=$NODE_ENV"
 pnpm install
 pnpm build
 pnpm start
-<<<<<<< HEAD
-=======
 
-
->>>>>>> 86d35628 (Merge updates from GitHub)
