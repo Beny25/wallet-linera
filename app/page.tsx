@@ -64,8 +64,7 @@ export default function Home() {
   const refreshBalance = async () => {
     if (!wallet) return;
     try {
-      setLoadingBalance(true);
-      const res = await 
+      setLoadingBalance(true);    
    const res = await fetch(`${process.env.NEXT_PUBLIC_BALANCE_API}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
