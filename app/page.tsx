@@ -65,7 +65,12 @@ export default function Home() {
     if (!wallet) return;
     try {
       setLoadingBalance(true);
-      const res = await fetch(`/api/balance?chainId=${wallet.chainId}`);
+      const res = await 
+   fetch(${process.env.NEXT_PUBLIC_BALANCE_API}, { 
+     method: "POST", 
+     headers: { "Content-Type": "application/json" }, 
+     body: JSON.stringify({ chainId: wallet.chainId }),
+   });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
