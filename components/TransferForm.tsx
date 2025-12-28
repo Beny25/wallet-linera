@@ -49,7 +49,7 @@ export default function TransferForm({
     try {
       setLoading(true);
 
-      const res = await fetch("/api/transfer", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_TRANSFER_API}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
