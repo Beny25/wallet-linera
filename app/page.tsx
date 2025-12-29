@@ -117,7 +117,7 @@ export default function Home() {
 
   /* ---------------- UI ---------------- */
   return (
-    <div className="max-w-md mx-auto mt-3 p-3 space-y-4">
+    <div className="max-w-md mx-auto mt-2 p-3 space-y-4">
       <Toaster position="top-right" />
       <HeaderBanner />
 
