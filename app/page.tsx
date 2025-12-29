@@ -135,7 +135,7 @@ export default function Home() {
       {/* WALLET */}
       {wallet && (
         <div className="bg-white rounded-xl shadow p-4 space-y-3">
-          <h2 className="text-lg font-bold text-center">Your Wallet</h2>
+          {/* <h2 className="text-lg font-bold text-center">Your Wallet</h2> */}
 
           {/* INFO */}
           <div className="bg-gray-50 rounded-lg p-3 text-xs space-y-2 break-all">
