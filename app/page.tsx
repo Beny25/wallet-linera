@@ -64,12 +64,12 @@ export default function Home() {
   const refreshBalance = async () => {
     if (!wallet) return;
     try {
-      setLoadingBalance(true);    
-   const res = await fetch(`${process.env.NEXT_PUBLIC_BALANCE_API}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chainId: wallet.chainId }),
-});
+      setLoadingBalance(true);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BALANCE_API}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chainId: wallet.chainId }),
+      });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
@@ -196,7 +196,7 @@ export default function Home() {
 
           {/* TRANSFER */}
           <TransferForm
-            walletAddress={`${wallet.chainId}:${wallet.accountId}`}
+            walletAddress={wallet.chainId} // pake chainId aja
             balance={wallet.balance}
             onUpdateBalance={(bal) => {
               const updated = { ...wallet, balance: bal };
@@ -244,4 +244,4 @@ export default function Home() {
       <Footer />
     </div>
   );
-    }
+}
