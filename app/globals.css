@@ -22,3 +22,25 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+@keyframes scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll {
+  display: inline-block;
+  animation: scroll 18s linear infinite;
+}
+
+@keyframes scroll {
+  from { transform: translateX(0%); }
+  to   { transform: translateX(-50%); }
+}
+
+.animate-scroll {
+  animation: scroll 18s linear infinite;
+}
