@@ -45,11 +45,6 @@ export default function TransferForm({
       return;
     }
 
-    if (!CHAIN_ID_REGEX.test(walletAddress)) {
-      toast.error("Invalid sender Chain ID");
-      return;
-    }
-
     const amt = Number(amount);
     if (isNaN(amt) || amt <= 0) {
       toast.error("Amount must be > 0");
