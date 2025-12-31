@@ -5,6 +5,7 @@ import { Toaster, toast } from "react-hot-toast";
 
 import HeaderBanner from "../components/HeaderBanner";
 import Footer from "../components/Footer";
+import ScrollingDisclaimer from "../components/ScrollingDisclaimer";
 import WalletCreateForm from "../components/WalletCreateForm";
 import TransferForm from "../components/TransferForm";
 
@@ -242,6 +243,7 @@ export default function Home() {
       )}
 
       <Footer />
+      <ScrollingDisclaimer />
     </div>
   );
 }
