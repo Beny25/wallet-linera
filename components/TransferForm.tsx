@@ -4,11 +4,14 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 
 type Props = {
-  walletAddress: string;
+  walletAddress: string; // sender CHAIN ID
   balance: string;
   onUpdateBalance: (bal: string) => void;
   onAddHistory: (tx: any) => void;
 };
+
+// Chain ID Linera = 64 hex
+const CHAIN_ID_REGEX = /^[a-f0-9]{64}$/i;
 
 export default function TransferForm({
   walletAddress,
@@ -17,10 +20,10 @@ export default function TransferForm({
   onAddHistory,
 }: Props) {
   const [to, setTo] = useState("");
-  const [amount, setAmount] = useState<string>("");
+  const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const numericBalance = Number(balance.replace(".", ""));
+  const numericBalance = Number(balance.replace(/[^\d]/g, ""));
 
   const handleMax = () => {
     if (numericBalance <= 0) {
@@ -31,42 +34,63 @@ export default function TransferForm({
   };
 
   const handleSend = async () => {
+    /* ---------- VALIDATION ---------- */
     if (!to || !amount) {
       toast.error("Recipient & amount required");
       return;
     }
 
-    if (Number(amount) <= 0) {
+    if (!CHAIN_ID_REGEX.test(to)) {
+      toast.error("Invalid recipient Chain ID");
+      return;
+    }
+
+    if (!CHAIN_ID_REGEX.test(walletAddress)) {
+      toast.error("Invalid sender Chain ID");
+      return;
+    }
+
+    const amt = Number(amount);
+    if (isNaN(amt) || amt <= 0) {
       toast.error("Amount must be > 0");
       return;
     }
 
-    if (Number(amount) > numericBalance) {
+    if (amt > numericBalance) {
       toast.error("Insufficient balance");
       return;
     }
 
+    /* ---------- TRANSFER ---------- */
     try {
       setLoading(true);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_TRANSFER_API}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from: walletAddress,
-          to,
-          amount,
-        }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_TRANSFER_API}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            from: walletAddress, // CHAIN ID ONLY
+            to,                  // CHAIN ID ONLY
+            amount: amt,
+          }),
+        }
+      );
 
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Transfer failed");
+      }
 
-      onUpdateBalance(data.balance);
+      // update balance dari backend
+      if (data.balance !== undefined) {
+        onUpdateBalance(data.balance);
+      }
 
       onAddHistory({
         type: "send",
-        amount,
+        amount: amt,
         from: walletAddress,
         to,
         result: "success",
@@ -90,11 +114,15 @@ export default function TransferForm({
       {/* Recipient */}
       <input
         type="text"
-        placeholder="Recipient Chain ID"
+        placeholder="Recipient Chain ID (64 hex)"
         value={to}
-        onChange={(e) => setTo(e.target.value)}
+        onChange={(e) => setTo(e.target.value.trim())}
         className="w-full border rounded-lg p-2 text-xs"
       />
+
+      <p className="text-[10px] text-gray-500">
+        Recipient must be an already opened Linera Chain ID
+      </p>
 
       {/* Amount + MAX */}
       <div className="flex gap-2">
@@ -124,5 +152,4 @@ export default function TransferForm({
       </button>
     </div>
   );
-}
-
+  }
