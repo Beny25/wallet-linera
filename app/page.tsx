@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
+import Link from "next/link";
 
 import HeaderBanner from "../components/HeaderBanner";
 import Footer from "../components/Footer";
@@ -30,24 +31,8 @@ export default function Home() {
   /* ---------------- CLIPBOARD ---------------- */
   const copy = async (text: string, label: string) => {
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const textarea = document.createElement("textarea");
-        textarea.value = text;
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
-
-        const ok = document.execCommand("copy");
-        document.body.removeChild(textarea);
-        if (!ok) throw new Error("copy failed");
-      }
-
+      await navigator.clipboard.writeText(text);
       toast.success(`${label} copied 📋`);
-      navigator.vibrate?.(30);
     } catch {
       toast.error("Copy failed");
     }
@@ -58,11 +43,12 @@ export default function Home() {
     if (!wallet) return;
     try {
       setLoadingBalance(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BALANCE_API}`, {
+      const res = await fetch(process.env.NEXT_PUBLIC_BALANCE_API!, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chainId: wallet.chainId }),
       });
+
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
@@ -119,7 +105,7 @@ export default function Home() {
 
       {/* WALLET */}
       {wallet && (
-        <div className="bg-white rounded-xl shadow p-4 space-y-3">
+        <div className="bg-white rounded-xl shadow p-4 space-y-4">
           {/* INFO */}
           <div className="bg-gray-50 rounded-lg p-3 text-xs space-y-2 break-all">
             <div className="flex justify-between">
@@ -146,7 +132,9 @@ export default function Home() {
 
             <p className="pt-1">
               <span className="font-semibold">Balance:</span>{" "}
-              <span className="text-green-600 font-medium">{wallet.balance}</span>
+              <span className="text-green-600 font-medium">
+                {wallet.balance}
+              </span>
             </p>
           </div>
 
@@ -155,25 +143,32 @@ export default function Home() {
             <button
               onClick={refreshBalance}
               disabled={loadingBalance}
-              className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 disabled:opacity-50"
+              className="bg-yellow-500 text-white p-2 rounded disabled:opacity-50"
             >
               {loadingBalance ? "..." : "Refresh"}
             </button>
 
             <button
               onClick={backupWallet}
-              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+              className="bg-blue-500 text-white p-2 rounded"
             >
               Backup
             </button>
 
             <button
               onClick={clearWallet}
-              className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
+              className="bg-red-500 text-white p-2 rounded"
             >
               Clear
             </button>
           </div>
+
+          {/* MARKET PLUGIN */}
+          <Link href="/market" className="block">
+            <button className="w-full bg-purple-600 text-white p-3 rounded-xl font-bold hover:bg-purple-700 transition">
+              Launch BTC Prediction Market 🚀
+            </button>
+          </Link>
 
           {/* TRANSFER */}
           <TransferForm
@@ -183,10 +178,6 @@ export default function Home() {
               const updated = { ...wallet, balance: bal };
               setWallet(updated);
               localStorage.setItem("wallet", JSON.stringify(updated));
-            }}
-            onAddHistory={(tx) => {
-              // Hanya tampilan receipt saat send, tidak disimpan
-              toast.success(`TX: ${tx.type} ${tx.amount} sent!`);
             }}
           />
         </div>
