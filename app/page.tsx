@@ -113,7 +113,7 @@ export default function Home() {
           <p className="text-gray-500 text-sm mb-4">
             Create your Linera wallet and start your ritual ✨
           </p>
-          <WalletCreateForm setWallet={handleWalletCreate} />
+          <WalletCreateForm onSuccess={handleWalletCreate} />
         </div>
       )}
 
