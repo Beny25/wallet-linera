@@ -170,7 +170,7 @@ export default function Home() {
             </button>
           </Link>
 
-          {/* TRANSFER */}
+           {/* TRANSFER */}
           <TransferForm
             walletAddress={wallet.chainId}
             balance={wallet.balance}
@@ -178,6 +178,10 @@ export default function Home() {
               const updated = { ...wallet, balance: bal };
               setWallet(updated);
               localStorage.setItem("wallet", JSON.stringify(updated));
+            }}
+            onAddHistory={(tx) => {
+              // Hanya tampilan receipt saat send, tidak disimpan
+              toast.success(`TX: ${tx.type} ${tx.amount} sent!`);
             }}
           />
         </div>
