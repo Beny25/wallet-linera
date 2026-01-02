@@ -16,7 +16,6 @@ export default function TransferForm({
   walletAddress,
   balance,
   onUpdateBalance,
-  onAddHistory,
 }: Props) {
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
