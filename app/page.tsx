@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
 
 import HeaderBanner from "../components/HeaderBanner";
@@ -25,17 +25,9 @@ export default function Home() {
     return null;
   });
 
-  const [history, setHistory] = useState<any[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("history");
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
-
   const [loadingBalance, setLoadingBalance] = useState(false);
 
-  /* ---------------- CLIPBOARD (HTTP SAFE) ---------------- */
+  /* ---------------- CLIPBOARD ---------------- */
   const copy = async (text: string, label: string) => {
     try {
       if (navigator.clipboard && window.isSecureContext) {
@@ -104,16 +96,8 @@ export default function Home() {
     if (!ok) return;
 
     localStorage.removeItem("wallet");
-    localStorage.removeItem("history");
     setWallet(null);
-    setHistory([]);
     toast.success("Wallet cleared");
-  };
-
-  const clearHistory = () => {
-    localStorage.removeItem("history");
-    setHistory([]);
-    toast.success("History cleared");
   };
 
   /* ---------------- UI ---------------- */
@@ -129,15 +113,13 @@ export default function Home() {
           <p className="text-gray-500 text-sm mb-4">
             Create your Linera wallet and start your ritual ✨
           </p>
-          <WalletCreateForm onSuccess={handleWalletCreate} />
+          <WalletCreateForm setWallet={handleWalletCreate} />
         </div>
       )}
 
       {/* WALLET */}
       {wallet && (
         <div className="bg-white rounded-xl shadow p-4 space-y-3">
-          {/* <h2 className="text-lg font-bold text-center">Your Wallet</h2> */}
-
           {/* INFO */}
           <div className="bg-gray-50 rounded-lg p-3 text-xs space-y-2 break-all">
             <div className="flex justify-between">
@@ -164,9 +146,7 @@ export default function Home() {
 
             <p className="pt-1">
               <span className="font-semibold">Balance:</span>{" "}
-              <span className="text-green-600 font-medium">
-                {wallet.balance}
-              </span>
+              <span className="text-green-600 font-medium">{wallet.balance}</span>
             </p>
           </div>
 
@@ -197,7 +177,7 @@ export default function Home() {
 
           {/* TRANSFER */}
           <TransferForm
-            walletAddress={wallet.chainId} // pake chainId aja
+            walletAddress={wallet.chainId}
             balance={wallet.balance}
             onUpdateBalance={(bal) => {
               const updated = { ...wallet, balance: bal };
@@ -205,40 +185,10 @@ export default function Home() {
               localStorage.setItem("wallet", JSON.stringify(updated));
             }}
             onAddHistory={(tx) => {
-              const updated = [tx, ...history];
-              setHistory(updated);
-              localStorage.setItem("history", JSON.stringify(updated));
+              // Hanya tampilan receipt saat send, tidak disimpan
+              toast.success(`TX: ${tx.type} ${tx.amount} sent!`);
             }}
           />
-
-          {/* HISTORY */}
-          {history.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-sm">Activity</h3>
-                <button
-                  onClick={clearHistory}
-                  className="text-red-500 text-xs"
-                >
-                  Clear history
-                </button>
-              </div>
-
-              <div className="max-h-48 overflow-y-auto space-y-2 text-xs">
-                {history.map((tx, i) => (
-                  <div key={i} className="border rounded p-2 bg-gray-50">
-                    <p className="font-medium">
-                      {tx.type.toUpperCase()} {tx.amount}
-                    </p>
-                    <p className="text-gray-600 break-all text-[10px]">
-                      {tx.from} → {tx.to}
-                    </p>
-                    <p className="text-gray-500 text-[9px]">{tx.result}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
