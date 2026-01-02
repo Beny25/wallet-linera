@@ -4,10 +4,9 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 
 type Props = {
-  walletAddress: string; // chainId
+  walletAddress: string;
   balance: string;
   onUpdateBalance: (bal: string) => void;
-  onAddHistory: (tx: any) => void;
 };
 
 const isValidChainId = (v: string) =>
