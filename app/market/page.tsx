@@ -1,3 +1,4 @@
+// app/market/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,28 +13,28 @@ type Wallet = {
 
 type Side = "UP" | "DOWN";
 
-// ⚠️ UNTUK TEST AMAN
-// ganti ke chain market asli kalau sudah ada
-const MARKET_CHAIN_ID_FALLBACK = "";
+// GANTI INI DENGAN CHAIN ID MARKET KAMU YANG ASLI
+const MARKET_CHAIN_ID = "0000000000000000000000000000000000000000000000000000000000000000";
 
 export default function MarketPage() {
   const router = useRouter();
 
-  /* ---------------- WALLET ---------------- */
-  const [wallet, setWallet] = useState<Wallet | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("wallet");
-    if (saved) setWallet(JSON.parse(saved));
-  }, []);
+  /* ---------------- WALLET STATE ---------------- */
+  const [wallet, setWallet] = useState<Wallet | null>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("wallet");
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
+  });
 
   /* ---------------- MARKET STATE ---------------- */
   const [side, setSide] = useState<Side | null>(null);
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
-  const [btcPrice, setBtcPrice] = useState<string>("Loading...");
+  const [btcPrice, setBtcPrice] = useState<string | null>(null);
 
-  /* ---------------- BTC PRICE ---------------- */
+  /* ---------------- BTC PRICE FETCH ---------------- */
   useEffect(() => {
     const fetchPrice = async () => {
       try {
@@ -47,38 +48,35 @@ export default function MarketPage() {
             maximumFractionDigits: 2,
           })
         );
-      } catch {
+      } catch (err) {
+        console.error("Failed to fetch BTC price:", err);
         setBtcPrice("N/A");
       }
     };
 
     fetchPrice();
-    const i = setInterval(fetchPrice, 30000);
-    return () => clearInterval(i);
+    const interval = setInterval(fetchPrice, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   /* ---------------- PLACE BET ---------------- */
   const placeBet = async () => {
     if (!wallet) {
-      toast.error("Wallet not found");
+      toast.error("Create wallet first");
       return;
     }
-
     if (!side || !amount) {
-      toast.error("Select direction & amount");
+      toast.error("Select direction and amount");
       return;
     }
 
     const numericAmount = Number(amount);
-    const balance = Number(wallet.balance.replace(/,/g, ""));
+    const numericBalance = Number(wallet.balance.replace(",", ""));
 
-    if (numericAmount <= 0 || numericAmount > balance) {
-      toast.error("Invalid amount / insufficient balance");
+    if (numericAmount <= 0 || numericAmount > numericBalance) {
+      toast.error("Invalid amount or insufficient balance");
       return;
     }
-
-    const marketChainId =
-      MARKET_CHAIN_ID_FALLBACK || wallet.chainId; // fallback test aman
 
     try {
       setLoading(true);
@@ -88,48 +86,51 @@ export default function MarketPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           from: wallet.chainId,
-          to: marketChainId,
+          to: MARKET_CHAIN_ID,
           amount: numericAmount,
           memo: side,
         }),
       });
 
-      // ✅ SAFE RESPONSE PARSE
-      const raw = await res.text();
-      let data: any;
-
+      let data: any = {};
       try {
-        data = JSON.parse(raw);
+        data = await res.json();
       } catch {
-        console.error("RAW RESPONSE:", raw);
-        throw new Error("Invalid server response");
+        const raw = await res.text();
+        console.error("Backend response not JSON:", raw);
+        toast.error("Invalid backend response");
+        return;
       }
 
-      if (!res.ok || data.error) {
-        throw new Error(data.error || "Transfer failed");
+      if (!data.success) {
+        toast.error(data.error || "Transaction failed");
+        return;
       }
 
-      if (!data.balance) {
-        throw new Error("Balance not returned from backend");
-      }
-
-      const updatedWallet = {
-        ...wallet,
-        balance: data.balance,
-      };
-
+      // Update wallet balance real-time
+      const updatedWallet = { ...wallet, balance: data.balance };
       setWallet(updatedWallet);
       localStorage.setItem("wallet", JSON.stringify(updatedWallet));
 
       setAmount("");
       setSide(null);
 
-      toast.success(`Bet ${side} success 🚀`);
+      toast.success(`Bet placed successfully on ${side}! 🚀`);
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "Transaction failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  /* ---------------- CLIPBOARD ---------------- */
+  const copy = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copied 📋`);
+    } catch {
+      toast.error("Copy failed");
     }
   };
 
@@ -139,88 +140,87 @@ export default function MarketPage() {
       <Toaster position="top-right" />
 
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-5">
+
         {/* HEADER */}
-        <div className="flex justify-between items-center border-b pb-3">
-          <h1 className="text-xl font-bold">BTC Prediction Market</h1>
+        <div className="flex items-center justify-between border-b pb-3">
+          <h1 className="text-xl font-bold text-gray-800">BTC Prediction Market</h1>
           <button
             onClick={() => router.push("/")}
             className="text-sm text-blue-600 hover:underline"
           >
-            ← Back
+            ← Back to Wallet
           </button>
         </div>
 
-        {/* PRICE */}
+        {/* BTC PRICE */}
         <div className="text-center">
-          <p className="text-xs text-gray-500">BTC / USDT</p>
-          <p className="text-3xl font-extrabold">${btcPrice}</p>
+          <p className="text-xs text-gray-500">Current BTC/USDT Price</p>
+          <p className="text-3xl font-extrabold text-gray-900">
+            ${btcPrice || "Loading..."}
+          </p>
         </div>
 
-        {/* WALLET */}
+        {/* WALLET INFO */}
         <div className="bg-blue-50 rounded-xl p-3 text-sm space-y-1">
           <p>
-            <span className="font-semibold">Chain ID:</span>{" "}
-            <span className="break-all">
-              {wallet?.chainId || "Not connected"}
-            </span>
+            <span className="font-semibold text-blue-800">Your Chain ID:</span>{" "}
+            <span className="break-all">{wallet?.chainId || "Not Connected"}</span>
           </p>
           <p>
-            <span className="font-semibold">Balance:</span>{" "}
-            <span className="text-green-600 font-bold">
-              {wallet?.balance || "0"}
-            </span>
+            <span className="font-semibold text-blue-800">Balance:</span>{" "}
+            <span className="text-green-600 font-extrabold">{wallet?.balance ?? "0.0"}</span>
           </p>
         </div>
 
-        {/* SIDE */}
+        {/* SIDE SELECT */}
         <div className="flex gap-3">
           <button
             onClick={() => setSide("UP")}
-            disabled={loading}
-            className={`flex-1 py-3 rounded-xl font-bold ${
+            className={`flex-1 py-3 rounded-xl text-lg font-bold transition ${
               side === "UP"
-                ? "bg-green-600 text-white"
-                : "bg-gray-100 hover:bg-gray-200"
+                ? "bg-green-600 text-white shadow-lg shadow-green-300"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
+            disabled={loading || !wallet}
           >
             📈 UP
           </button>
 
           <button
             onClick={() => setSide("DOWN")}
-            disabled={loading}
-            className={`flex-1 py-3 rounded-xl font-bold ${
+            className={`flex-1 py-3 rounded-xl text-lg font-bold transition ${
               side === "DOWN"
-                ? "bg-red-600 text-white"
-                : "bg-gray-100 hover:bg-gray-200"
+                ? "bg-red-600 text-white shadow-lg shadow-red-300"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
+            disabled={loading || !wallet}
           >
             📉 DOWN
           </button>
         </div>
 
-        {/* AMOUNT */}
+        {/* AMOUNT INPUT */}
         <input
           type="number"
           min="0"
-          placeholder="Bet amount"
+          placeholder="Bet amount (in Linera Tokens)"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          disabled={loading}
-          className="w-full border rounded-xl px-4 py-3"
+          className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:ring-blue-500 focus:border-blue-500"
+          disabled={loading || !wallet}
         />
 
-        {/* SUBMIT */}
+        {/* PLACE BET BUTTON */}
         <button
           onClick={placeBet}
-          disabled={loading || !side || !amount}
-          className="w-full bg-black text-white py-3 rounded-xl font-bold disabled:opacity-50"
+          disabled={loading || !wallet || !side || !amount}
+          className="w-full bg-black text-white py-3 rounded-xl text-lg font-bold disabled:opacity-50 transition duration-150"
         >
-          {loading ? "Processing..." : `Bet ${side ?? ""}`}
+          {loading ? "Placing Bet..." : `Bet ${side || '...'} ${amount || '0'} Tokens`}
         </button>
 
-        <p className="text-xs text-center text-gray-500">
-          On-chain transfer to market chain
+        <p className="text-center text-xs text-gray-500 pt-2">
+          Your bet is a real on-chain transfer to the Market Chain ID.
         </p>
       </div>
     </div>
