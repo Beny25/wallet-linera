@@ -7,6 +7,7 @@ type Props = {
   walletAddress: string;
   balance: string;
   onUpdateBalance: (bal: string) => void;
+  onAddHistory: (tx: any) => void;
 };
 
 const isValidChainId = (v: string) =>
@@ -16,6 +17,7 @@ export default function TransferForm({
   walletAddress,
   balance,
   onUpdateBalance,
+  onAddHistory,
 }: Props) {
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
