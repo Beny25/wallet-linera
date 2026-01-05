@@ -1,4 +1,3 @@
-// app/market/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -14,7 +13,7 @@ type Wallet = {
 type Side = "UP" | "DOWN";
 
 // GANTI INI DENGAN CHAIN ID MARKET KAMU YANG ASLI
-const MARKET_CHAIN_ID = "f871bc86b3fc1fbdb0e5a7aa505f974fa0468878606edef8683fdd2489f8c8db";
+const MARKET_CHAIN_ID = "0000000000000000000000000000000000000000000000000000000000000000"; 
 
 export default function MarketPage() {
   const router = useRouter();
@@ -31,50 +30,89 @@ export default function MarketPage() {
   /* ---------------- MARKET STATE ---------------- */
   const [side, setSide] = useState<Side | null>(null);
   const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
   const [btcPrice, setBtcPrice] = useState<string | null>(null);
 
   /* ---------------- BTC PRICE FETCH ---------------- */
   useEffect(() => {
     const fetchPrice = async () => {
       try {
-        const res = await fetch(
-          "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
-        );
+        // Mengambil harga BTC dari API publik (Binance)
+        const res = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT");
         const data = await res.json();
-        setBtcPrice(
-          parseFloat(data.price).toLocaleString("en-US", {
+        setBtcPrice(parseFloat(data.price).toLocaleString("en-US", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
-          })
-        );
-      } catch (err) {
-        console.error("Failed to fetch BTC price:", err);
+        }));
+      } catch (error) {
+        console.error("Failed to fetch BTC price:", error);
         setBtcPrice("N/A");
       }
     };
 
     fetchPrice();
-    const interval = setInterval(fetchPrice, 30000);
+    // Update harga setiap 30 detik
+    const interval = setInterval(fetchPrice, 30000); 
     return () => clearInterval(interval);
   }, []);
 
-  /* ---------------- PLACE BET (DEV MODE) ---------------- */
+  /* ---------------- BET ---------------- */
   const placeBet = async () => {
-    toast('⚠️ Sorry! This feature is under development.', {
-      style: {
-        background: '#333',
-        color: '#fff',
-      },
-    });
-  };
+    if (!wallet) {
+      toast.error("Create wallet first");
+      return;
+    }
 
-  /* ---------------- CLIPBOARD ---------------- */
-  const copy = async (text: string, label: string) => {
+    if (!side || !amount) {
+      toast.error("Select direction and amount");
+      return;
+    }
+    
+    const numericAmount = Number(amount);
+    const numericBalance = Number(wallet.balance.replace(",", ""));
+
+    if (numericAmount <= 0 || numericAmount > numericBalance) {
+        toast.error("Invalid amount or insufficient balance");
+        return;
+    }
+
     try {
-      await navigator.clipboard.writeText(text);
-      toast.success(`${label} copied 📋`);
-    } catch {
-      toast.error("Copy failed");
+      setLoading(true);
+
+      const res = await fetch(process.env.NEXT_PUBLIC_TRANSFER_API!, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: wallet.chainId,
+          to: MARKET_CHAIN_ID,
+          amount: numericAmount,
+          memo: side, // Tambahkan memo untuk backend (opsional)
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Transfer failed");
+      }
+
+      // UPDATE BALANCE REAL
+      const updatedWallet = {
+        ...wallet,
+        balance: data.balance,
+      };
+
+      setWallet(updatedWallet);
+      localStorage.setItem("wallet", JSON.stringify(updatedWallet));
+
+      setAmount("");
+      setSide(null);
+
+      toast.success(`Bet placed successfully on ${side}! TX: ${data.txHash.substring(0, 8)}... 🚀`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Transaction failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -87,7 +125,9 @@ export default function MarketPage() {
 
         {/* HEADER */}
         <div className="flex items-center justify-between border-b pb-3">
-          <h1 className="text-xl font-bold text-gray-800">BTC Prediction Market</h1>
+          <h1 className="text-xl font-bold text-gray-800">
+            BTC Prediction Market
+          </h1>
           <button
             onClick={() => router.push("/")}
             className="text-sm text-blue-600 hover:underline"
@@ -95,13 +135,13 @@ export default function MarketPage() {
             ← Back to Wallet
           </button>
         </div>
-
+        
         {/* BTC PRICE */}
         <div className="text-center">
-          <p className="text-xs text-gray-500">Current BTC/USDT Price</p>
-          <p className="text-3xl font-extrabold text-gray-900">
-            ${btcPrice || "Loading..."}
-          </p>
+            <p className="text-xs text-gray-500">Current BTC/USDT Price</p>
+            <p className="text-3xl font-extrabold text-gray-900">
+                ${btcPrice || "Loading..."}
+            </p>
         </div>
 
         {/* WALLET INFO */}
@@ -112,7 +152,9 @@ export default function MarketPage() {
           </p>
           <p>
             <span className="font-semibold text-blue-800">Balance:</span>{" "}
-            <span className="text-green-600 font-extrabold">{wallet?.balance ?? "0.0"}</span>
+            <span className="text-green-600 font-extrabold">
+              {wallet?.balance ?? "0.0"}
+            </span>
           </p>
         </div>
 
@@ -120,30 +162,32 @@ export default function MarketPage() {
         <div className="flex gap-3">
           <button
             onClick={() => setSide("UP")}
-            className={`flex-1 py-3 rounded-xl text-lg font-bold transition ${
-              side === "UP"
-                ? "bg-green-600 text-white shadow-lg shadow-green-300"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-            disabled={!wallet}
+            className={`flex-1 py-3 rounded-xl text-lg font-bold transition
+              ${
+                side === "UP"
+                  ? "bg-green-600 text-white shadow-lg shadow-green-300"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            disabled={loading || !wallet}
           >
             📈 UP
           </button>
 
           <button
             onClick={() => setSide("DOWN")}
-            className={`flex-1 py-3 rounded-xl text-lg font-bold transition ${
-              side === "DOWN"
-                ? "bg-red-600 text-white shadow-lg shadow-red-300"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-            disabled={!wallet}
+            className={`flex-1 py-3 rounded-xl text-lg font-bold transition
+              ${
+                side === "DOWN"
+                  ? "bg-red-600 text-white shadow-lg shadow-red-300"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            disabled={loading || !wallet}
           >
             📉 DOWN
           </button>
         </div>
 
-        {/* AMOUNT INPUT */}
+        {/* AMOUNT */}
         <input
           type="number"
           min="0"
@@ -151,22 +195,23 @@ export default function MarketPage() {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:ring-blue-500 focus:border-blue-500"
-          disabled={!wallet}
+          disabled={loading || !wallet}
         />
 
-        {/* PLACE BET BUTTON */}
+        {/* SUBMIT */}
         <button
           onClick={placeBet}
-          disabled={!wallet || !side || !amount}
+          disabled={loading || !wallet || !side || !amount}
           className="w-full bg-black text-white py-3 rounded-xl text-lg font-bold disabled:opacity-50 transition duration-150"
         >
-          {`Bet ${side || '...'} ${amount || '0'} Tokens`}
+          {loading ? "Placing Bet..." : `Bet ${side || '...'} ${amount || '0'} Tokens`}
         </button>
 
+        {/* FOOT NOTE */}
         <p className="text-center text-xs text-gray-500 pt-2">
           Your bet is a real on-chain transfer to the Market Chain ID.
         </p>
       </div>
     </div>
   );
-}
+      }
