@@ -28,30 +28,38 @@ export default function MarketPage() {
 
   const [side, setSide] = useState<Side | null>(null);
   const [amount, setAmount] = useState("");
-  const [btcPrice, setBtcPrice] = useState<string | null>("Loading...");
+  const [btcPrice, setBtcPrice] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("btcPrice") || "Loading...";
+    }
+    return "Loading...";
+  });
 
-  /* ---------------- BTC PRICE WEBSOCKET ---------------- */
+  /* ---------------- BTC PRICE FETCH (Coingecko) ---------------- */
   useEffect(() => {
-    const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade");
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      // price ada di data.p
-      const price = parseFloat(data.p).toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-      setBtcPrice(price);
-      localStorage.setItem("btcPrice", price);
+    const fetchPrice = async () => {
+      try {
+        const res = await fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
+        );
+        if (!res.ok) throw new Error("Network response was not ok");
+        const data = await res.json();
+        const formatted = parseFloat(data.bitcoin.usd).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        setBtcPrice(formatted);
+        localStorage.setItem("btcPrice", formatted);
+      } catch (err) {
+        console.error("Failed to fetch BTC price:", err);
+        const lastPrice = localStorage.getItem("btcPrice") || "0.00";
+        setBtcPrice(lastPrice);
+      }
     };
 
-    ws.onerror = (err) => {
-      console.error("WebSocket error:", err);
-      const lastPrice = localStorage.getItem("btcPrice") || "0.00";
-      setBtcPrice(lastPrice);
-    };
-
-    return () => ws.close();
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 10000); // update tiap 10 detik
+    return () => clearInterval(interval);
   }, []);
 
   /* ---------------- PLACE BET (DEV MODE) ---------------- */
@@ -91,7 +99,7 @@ export default function MarketPage() {
 
         {/* BTC PRICE */}
         <div className="text-center">
-          <p className="text-xs text-gray-500">Current BTC/USDT Price</p>
+          <p className="text-xs text-gray-500">Current BTC/USD Price</p>
           <p className="text-3xl font-extrabold text-gray-900">
             ${btcPrice || "Loading..."}
           </p>
