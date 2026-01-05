@@ -31,7 +31,6 @@ export default function MarketPage() {
   /* ---------------- MARKET STATE ---------------- */
   const [side, setSide] = useState<Side | null>(null);
   const [amount, setAmount] = useState("");
-  const [loading, setLoading] = useState(false);
   const [btcPrice, setBtcPrice] = useState<string | null>(null);
 
   /* ---------------- BTC PRICE FETCH ---------------- */
@@ -59,54 +58,14 @@ export default function MarketPage() {
     return () => clearInterval(interval);
   }, []);
 
-  /* ---------------- PLACE BET ---------------- */
+  /* ---------------- PLACE BET (DEV MODE) ---------------- */
   const placeBet = async () => {
-    if (!wallet) return toast.error("Create wallet first");
-    if (!side || !amount) return toast.error("Select direction and amount");
-
-    const numericAmount = Number(amount);
-    const numericBalance = Number(wallet.balance.replace(",", ""));
-
-    if (numericAmount <= 0 || numericAmount > numericBalance)
-      return toast.error("Invalid amount or insufficient balance");
-
-    try {
-      setLoading(true);
-
-      const res = await fetch(process.env.NEXT_PUBLIC_TRANSFER_API!, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from: wallet.chainId,
-          to: MARKET_CHAIN_ID,
-          amount: numericAmount,
-          memo: side,
-        }),
-      });
-
-      // ✅ parse JSON sekali saja
-      const data = await res.json();
-
-      if (!data.success) {
-        toast.error(data.error || "Transaction failed");
-        return;
-      }
-
-      // SUCCESS → update wallet balance real-time
-      const updatedWallet = { ...wallet, balance: data.balance };
-      setWallet(updatedWallet);
-      localStorage.setItem("wallet", JSON.stringify(updatedWallet));
-
-      setAmount("");
-      setSide(null);
-
-      toast.success(`Bet placed successfully on ${side}! 🚀`);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || "Transaction failed");
-    } finally {
-      setLoading(false);
-    }
+    toast('⚠️ Sorry! This feature is under development.', {
+      style: {
+        background: '#333',
+        color: '#fff',
+      },
+    });
   };
 
   /* ---------------- CLIPBOARD ---------------- */
@@ -166,7 +125,7 @@ export default function MarketPage() {
                 ? "bg-green-600 text-white shadow-lg shadow-green-300"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
-            disabled={loading || !wallet}
+            disabled={!wallet}
           >
             📈 UP
           </button>
@@ -178,7 +137,7 @@ export default function MarketPage() {
                 ? "bg-red-600 text-white shadow-lg shadow-red-300"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
-            disabled={loading || !wallet}
+            disabled={!wallet}
           >
             📉 DOWN
           </button>
@@ -192,16 +151,16 @@ export default function MarketPage() {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:ring-blue-500 focus:border-blue-500"
-          disabled={loading || !wallet}
+          disabled={!wallet}
         />
 
         {/* PLACE BET BUTTON */}
         <button
           onClick={placeBet}
-          disabled={loading || !wallet || !side || !amount}
+          disabled={!wallet || !side || !amount}
           className="w-full bg-black text-white py-3 rounded-xl text-lg font-bold disabled:opacity-50 transition duration-150"
         >
-          {loading ? "Placing Bet..." : `Bet ${side || '...'} ${amount || '0'} Tokens`}
+          {`Bet ${side || '...'} ${amount || '0'} Tokens`}
         </button>
 
         <p className="text-center text-xs text-gray-500 pt-2">
@@ -210,4 +169,4 @@ export default function MarketPage() {
       </div>
     </div>
   );
-                                         }
+}
