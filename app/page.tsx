@@ -175,7 +175,7 @@ export default function Home() {
         className="text-gray-300 hover:text-white"
         title="Copy Chain ID"
       >
-        Copy
+        📋
       </button>
     </div>
     <div className="break-all text-gray-100">
@@ -225,7 +225,7 @@ export default function Home() {
           {/* MARKET */}
           <Link href="/market" className="block mt-2">
             <button className="w-full bg-purple-600 text-white p-3 rounded-xl font-bold hover:bg-purple-700 transition">
-              Launch BTC Prediction Market 🚀
+              Launch BTC Prediction Market
             </button>
           </Link>
 
