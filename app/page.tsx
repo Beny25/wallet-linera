@@ -165,28 +165,41 @@ export default function Home() {
               <span className="text-sm text-gray-400">LINERA</span>
             </div>
 
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400">Chain ID</span>
-                <button
-                  onClick={() => copy(wallet.chainId, "Chain ID")}
-                  className="max-w-[200px] truncate"
-                >
-                  {wallet.chainId} 📋
-                </button>
-              </div>
+            <div className="space-y-3 text-xs">
+  {/* Chain ID */}
+  <div className="space-y-1">
+    <div className="flex justify-between items-center">
+      <span className="text-gray-400">Chain ID</span>
+      <button
+        onClick={() => copy(wallet.chainId, "Chain ID")}
+        className="text-gray-300 hover:text-white"
+        title="Copy Chain ID"
+      >
+        Copy
+      </button>
+    </div>
+    <div className="break-all text-gray-100">
+      {wallet.chainId}
+    </div>
+  </div>
 
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400">Public Key</span>
-                <button
-                  onClick={() => copy(wallet.accountId, "Public key")}
-                  className="max-w-[200px] truncate"
-                >
-                  {wallet.accountId} 📋
-                </button>
-              </div>
-            </div>
-          </div>
+  {/* Public Key */}
+  <div className="space-y-1">
+    <div className="flex justify-between items-center">
+      <span className="text-gray-400">Public Key</span>
+      <button
+        onClick={() => copy(wallet.accountId, "Public Key")}
+        className="text-gray-300 hover:text-white"
+        title="Copy Public Key"
+      >
+        Copy
+      </button>
+    </div>
+    <div className="break-all text-gray-100">
+      {wallet.accountId}
+    </div>
+  </div>
+</div>
 
           {/* ACTIONS */}
           <div className="grid grid-cols-2 gap-2 text-sm">
