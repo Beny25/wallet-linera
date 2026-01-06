@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import Link from "next/link";
-import { RefreshCw, Copy } from "lucide-react";
 
 import HeaderBanner from "../components/HeaderBanner";
 import Footer from "../components/Footer";
@@ -30,7 +29,6 @@ type BalanceResponse = {
 /* ================= PAGE ================= */
 
 export default function Home() {
-  /* -------- STATE -------- */
   const [wallet, setWallet] = useState<Wallet | null>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("wallet");
@@ -42,6 +40,7 @@ export default function Home() {
   const [loadingBalance, setLoadingBalance] = useState(false);
 
   /* -------- HELPERS -------- */
+
   const copy = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -58,13 +57,14 @@ export default function Home() {
 
   const handleInactiveChain = () => {
     toast.error(
-      "This chain is no longer active. Don’t worry 🙂 You can clear your wallet and create a new one.",
-      { duration: 4000 }
+      "This chain is no longer active. You can safely clear your wallet and create a new one.",
+      { duration: 4500 }
     );
     clearWallet();
   };
 
   /* -------- BALANCE -------- */
+
   const refreshBalance = async () => {
     if (!wallet || loadingBalance) return;
 
@@ -79,7 +79,10 @@ export default function Home() {
 
       const data: BalanceResponse = await res.json();
 
-      if (wallet.genesisHash && wallet.genesisHash !== data.genesis_hash) {
+      if (
+        wallet.genesisHash &&
+        wallet.genesisHash !== data.genesis_hash
+      ) {
         handleInactiveChain();
         return;
       }
@@ -108,7 +111,6 @@ export default function Home() {
     }
   };
 
-  /* -------- WALLET CREATE -------- */
   const handleWalletCreate = (w: Wallet) => {
     setWallet(w);
     localStorage.setItem("wallet", JSON.stringify(w));
@@ -122,7 +124,6 @@ export default function Home() {
       <Toaster position="top-right" />
       <HeaderBanner />
 
-      {/* CREATE WALLET */}
       {!wallet && (
         <div className="bg-white rounded-xl shadow p-5 text-center">
           <h1 className="text-xl font-bold mb-2">ChainRitual Wallet</h1>
@@ -133,7 +134,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* WALLET */}
       {wallet && (
         <div className="space-y-4">
           {/* DARK WALLET CARD */}
@@ -144,44 +144,55 @@ export default function Home() {
               <button
                 onClick={refreshBalance}
                 disabled={loadingBalance}
-                className="text-gray-300 hover:text-white"
                 title="Refresh balance"
+                className="text-gray-300 hover:text-white"
               >
-                <RefreshCw
-                  size={16}
-                  className={loadingBalance ? "animate-spin" : ""}
-                />
+                {/* Refresh Icon (SVG) */}
+                <svg
+                  className={`w-4 h-4 ${
+                    loadingBalance ? "animate-spin" : ""
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 4v6h6M20 20v-6h-6M5 19a9 9 0 0014-7 9 9 0 00-9-9"
+                  />
+                </svg>
               </button>
             </div>
 
             <div className="text-3xl font-bold">
-              {wallet.balance} <span className="text-sm">LINERA</span>
+              {wallet.balance}{" "}
+              <span className="text-sm text-gray-400">LINERA</span>
             </div>
 
-            <div className="space-y-1 text-xs">
+            <div className="space-y-2 text-xs">
+              {/* Chain ID */}
               <div className="flex justify-between items-center">
                 <span className="text-gray-400">Chain ID</span>
                 <button
                   onClick={() => copy(wallet.chainId, "Chain ID")}
-                  className="flex items-center gap-1 text-gray-200 hover:text-white"
+                  className="flex items-center gap-1 text-gray-200 hover:text-white max-w-[200px]"
                 >
-                  <span className="truncate max-w-[180px]">
-                    {wallet.chainId}
-                  </span>
-                  <Copy size={12} />
+                  <span className="truncate">{wallet.chainId}</span>
+                  📋
                 </button>
               </div>
 
+              {/* Public Key */}
               <div className="flex justify-between items-center">
                 <span className="text-gray-400">Public Key</span>
                 <button
                   onClick={() => copy(wallet.accountId, "Public key")}
-                  className="flex items-center gap-1 text-gray-200 hover:text-white"
+                  className="flex items-center gap-1 text-gray-200 hover:text-white max-w-[200px]"
                 >
-                  <span className="truncate max-w-[180px]">
-                    {wallet.accountId}
-                  </span>
-                  <Copy size={12} />
+                  <span className="truncate">{wallet.accountId}</span>
+                  📋
                 </button>
               </div>
             </div>
@@ -206,14 +217,12 @@ export default function Home() {
             </button>
           </div>
 
-          {/* MARKET */}
           <Link href="/market">
             <button className="w-full bg-purple-600 text-white p-3 rounded-xl font-bold hover:bg-purple-700 transition">
               Launch BTC Prediction Market 🚀
             </button>
           </Link>
 
-          {/* TRANSFER */}
           <TransferForm
             walletAddress={wallet.chainId}
             balance={wallet.balance}
