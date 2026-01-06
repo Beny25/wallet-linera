@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import Link from "next/link";
+import { RefreshCw, Copy } from "lucide-react";
 
 import HeaderBanner from "../components/HeaderBanner";
 import Footer from "../components/Footer";
@@ -10,14 +11,26 @@ import ScrollingDisclaimer from "../components/ScrollingDisclaimer";
 import WalletCreateForm from "../components/WalletCreateForm";
 import TransferForm from "../components/TransferForm";
 
+/* ================= TYPES ================= */
+
 type Wallet = {
   chainId: string;
   accountId: string;
   balance: string;
+  genesisHash?: string;
 };
 
+type BalanceResponse = {
+  ok: boolean;
+  balance?: string;
+  error?: string;
+  genesis_hash: string;
+};
+
+/* ================= PAGE ================= */
+
 export default function Home() {
-  /* ---------------- STATE ---------------- */
+  /* -------- STATE -------- */
   const [wallet, setWallet] = useState<Wallet | null>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("wallet");
@@ -28,65 +41,82 @@ export default function Home() {
 
   const [loadingBalance, setLoadingBalance] = useState(false);
 
-  /* ---------------- CLIPBOARD ---------------- */
+  /* -------- HELPERS -------- */
   const copy = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      toast.success(`${label} copied 📋`);
+      toast.success(`${label} copied`);
     } catch {
       toast.error("Copy failed");
     }
   };
 
-  /* ---------------- BALANCE ---------------- */
+  const clearWallet = () => {
+    localStorage.removeItem("wallet");
+    setWallet(null);
+  };
+
+  const handleInactiveChain = () => {
+    toast.error(
+      "This chain is no longer active. Don’t worry 🙂 You can clear your wallet and create a new one.",
+      { duration: 4000 }
+    );
+    clearWallet();
+  };
+
+  /* -------- BALANCE -------- */
   const refreshBalance = async () => {
-    if (!wallet) return;
+    if (!wallet || loadingBalance) return;
+
+    setLoadingBalance(true);
+
     try {
-      setLoadingBalance(true);
       const res = await fetch(process.env.NEXT_PUBLIC_BALANCE_API!, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chainId: wallet.chainId }),
       });
 
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      const data: BalanceResponse = await res.json();
 
-      const updated = { ...wallet, balance: data.balance };
+      if (wallet.genesisHash && wallet.genesisHash !== data.genesis_hash) {
+        handleInactiveChain();
+        return;
+      }
+
+      if (!res.ok || !data.ok) {
+        if (data.error === "CHAIN_NOT_ACTIVE") {
+          handleInactiveChain();
+          return;
+        }
+        throw new Error(data.error || "Failed to refresh balance");
+      }
+
+      const updated: Wallet = {
+        ...wallet,
+        balance: data.balance!,
+        genesisHash: data.genesis_hash,
+      };
+
       setWallet(updated);
       localStorage.setItem("wallet", JSON.stringify(updated));
       toast.success("Balance updated");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to refresh balance");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to refresh balance");
     } finally {
       setLoadingBalance(false);
     }
   };
 
-  /* ---------------- WALLET ---------------- */
+  /* -------- WALLET CREATE -------- */
   const handleWalletCreate = (w: Wallet) => {
     setWallet(w);
     localStorage.setItem("wallet", JSON.stringify(w));
     toast.success("Wallet created");
   };
 
-  const backupWallet = () => {
-    if (!wallet) return;
-    copy(JSON.stringify(wallet, null, 2), "Wallet");
-  };
+  /* ================= UI ================= */
 
-  const clearWallet = () => {
-    const ok = window.confirm(
-      "Are you sure you want to clear this wallet?\n\nThis action cannot be undone."
-    );
-    if (!ok) return;
-
-    localStorage.removeItem("wallet");
-    setWallet(null);
-    toast.success("Wallet cleared");
-  };
-
-  /* ---------------- UI ---------------- */
   return (
     <div className="max-w-md mx-auto mt-2 p-3 space-y-4">
       <Toaster position="top-right" />
@@ -105,51 +135,64 @@ export default function Home() {
 
       {/* WALLET */}
       {wallet && (
-        <div className="bg-white rounded-xl shadow p-4 space-y-4">
-          {/* INFO */}
-          <div className="bg-gray-50 rounded-lg p-3 text-xs space-y-2 break-all">
-            <div className="flex justify-between">
-              <span className="font-semibold">Chain ID</span>
+        <div className="space-y-4">
+          {/* DARK WALLET CARD */}
+          <div className="bg-neutral-900 text-white rounded-2xl p-4 shadow-lg space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-400">Balance</span>
+
               <button
-                onClick={() => copy(wallet.chainId, "Chain ID")}
-                className="text-blue-600 text-[10px]"
+                onClick={refreshBalance}
+                disabled={loadingBalance}
+                className="text-gray-300 hover:text-white"
+                title="Refresh balance"
               >
-                Copy
+                <RefreshCw
+                  size={16}
+                  className={loadingBalance ? "animate-spin" : ""}
+                />
               </button>
             </div>
-            <p>{wallet.chainId}</p>
 
-            <div className="flex justify-between pt-1">
-              <span className="font-semibold">Account ID</span>
-              <button
-                onClick={() => copy(wallet.accountId, "Account ID")}
-                className="text-blue-600 text-[10px]"
-              >
-                Copy
-              </button>
+            <div className="text-3xl font-bold">
+              {wallet.balance} <span className="text-sm">LINERA</span>
             </div>
-            <p>{wallet.accountId}</p>
 
-            <p className="pt-1">
-              <span className="font-semibold">Balance:</span>{" "}
-              <span className="text-green-600 font-medium">
-                {wallet.balance}
-              </span>
-            </p>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Chain ID</span>
+                <button
+                  onClick={() => copy(wallet.chainId, "Chain ID")}
+                  className="flex items-center gap-1 text-gray-200 hover:text-white"
+                >
+                  <span className="truncate max-w-[180px]">
+                    {wallet.chainId}
+                  </span>
+                  <Copy size={12} />
+                </button>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Public Key</span>
+                <button
+                  onClick={() => copy(wallet.accountId, "Public key")}
+                  className="flex items-center gap-1 text-gray-200 hover:text-white"
+                >
+                  <span className="truncate max-w-[180px]">
+                    {wallet.accountId}
+                  </span>
+                  <Copy size={12} />
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* ACTIONS */}
-          <div className="grid grid-cols-3 gap-2 text-sm">
+          <div className="grid grid-cols-2 gap-2 text-sm">
             <button
-              onClick={refreshBalance}
-              disabled={loadingBalance}
-              className="bg-yellow-500 text-white p-2 rounded disabled:opacity-50"
-            >
-              {loadingBalance ? "..." : "Refresh"}
-            </button>
-
-            <button
-              onClick={backupWallet}
+              onClick={() =>
+                copy(JSON.stringify(wallet, null, 2), "Wallet backup")
+              }
               className="bg-blue-500 text-white p-2 rounded"
             >
               Backup
@@ -163,14 +206,14 @@ export default function Home() {
             </button>
           </div>
 
-          {/* MARKET PLUGIN */}
-          <Link href="/market" className="block">
+          {/* MARKET */}
+          <Link href="/market">
             <button className="w-full bg-purple-600 text-white p-3 rounded-xl font-bold hover:bg-purple-700 transition">
               Launch BTC Prediction Market 🚀
             </button>
           </Link>
 
-           {/* TRANSFER */}
+          {/* TRANSFER */}
           <TransferForm
             walletAddress={wallet.chainId}
             balance={wallet.balance}
@@ -180,7 +223,6 @@ export default function Home() {
               localStorage.setItem("wallet", JSON.stringify(updated));
             }}
             onAddHistory={(tx) => {
-              // Hanya tampilan receipt saat send, tidak disimpan
               toast.success(`TX: ${tx.type} ${tx.amount} sent!`);
             }}
           />
