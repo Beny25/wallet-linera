@@ -19,13 +19,6 @@ type Wallet = {
   genesisHash?: string;
 };
 
-type BalanceResponse = {
-  ok: boolean;
-  balance?: string;
-  error?: string;
-  genesis_hash: string;
-};
-
 /* ================= PAGE ================= */
 
 export default function Home() {
@@ -67,7 +60,6 @@ export default function Home() {
 
   const refreshBalance = async () => {
     if (!wallet || loadingBalance) return;
-
     setLoadingBalance(true);
 
     try {
@@ -77,27 +69,28 @@ export default function Home() {
         body: JSON.stringify({ chainId: wallet.chainId }),
       });
 
-      const data: BalanceResponse = await res.json();
+      const data = await res.json();
 
-      if (
-        wallet.genesisHash &&
-        wallet.genesisHash !== data.genesis_hash
-      ) {
+      // chain inactive
+      if (data.error === "CHAIN_NOT_ACTIVE") {
         handleInactiveChain();
         return;
       }
 
-      if (!res.ok || !data.ok) {
-        if (data.error === "CHAIN_NOT_ACTIVE") {
-          handleInactiveChain();
-          return;
-        }
-        throw new Error(data.error || "Failed to refresh balance");
+      // hard fail
+      if (!res.ok || !data.balance) {
+        throw new Error(data.error || "Balance unavailable");
+      }
+
+      // genesis reset
+      if (wallet.genesisHash && wallet.genesisHash !== data.genesis_hash) {
+        handleInactiveChain();
+        return;
       }
 
       const updated: Wallet = {
         ...wallet,
-        balance: data.balance!,
+        balance: data.balance,
         genesisHash: data.genesis_hash,
       };
 
@@ -124,6 +117,7 @@ export default function Home() {
       <Toaster position="top-right" />
       <HeaderBanner />
 
+      {/* CREATE WALLET */}
       {!wallet && (
         <div className="bg-white rounded-xl shadow p-5 text-center">
           <h1 className="text-xl font-bold mb-2">ChainRitual Wallet</h1>
@@ -134,6 +128,7 @@ export default function Home() {
         </div>
       )}
 
+      {/* WALLET */}
       {wallet && (
         <div className="space-y-4">
           {/* DARK WALLET CARD */}
@@ -147,7 +142,6 @@ export default function Home() {
                 title="Refresh balance"
                 className="text-gray-300 hover:text-white"
               >
-                {/* Refresh Icon (SVG) */}
                 <svg
                   className={`w-4 h-4 ${
                     loadingBalance ? "animate-spin" : ""
@@ -172,27 +166,23 @@ export default function Home() {
             </div>
 
             <div className="space-y-2 text-xs">
-              {/* Chain ID */}
               <div className="flex justify-between items-center">
                 <span className="text-gray-400">Chain ID</span>
                 <button
                   onClick={() => copy(wallet.chainId, "Chain ID")}
-                  className="flex items-center gap-1 text-gray-200 hover:text-white max-w-[200px]"
+                  className="max-w-[200px] truncate"
                 >
-                  <span className="truncate">{wallet.chainId}</span>
-                  📋
+                  {wallet.chainId} 📋
                 </button>
               </div>
 
-              {/* Public Key */}
               <div className="flex justify-between items-center">
                 <span className="text-gray-400">Public Key</span>
                 <button
                   onClick={() => copy(wallet.accountId, "Public key")}
-                  className="flex items-center gap-1 text-gray-200 hover:text-white max-w-[200px]"
+                  className="max-w-[200px] truncate"
                 >
-                  <span className="truncate">{wallet.accountId}</span>
-                  📋
+                  {wallet.accountId} 📋
                 </button>
               </div>
             </div>
@@ -217,12 +207,14 @@ export default function Home() {
             </button>
           </div>
 
-          <Link href="/market">
+          {/* MARKET */}
+          <Link href="/market" className="block pt-2">
             <button className="w-full bg-purple-600 text-white p-3 rounded-xl font-bold hover:bg-purple-700 transition">
-              Launch BTC Prediction Market 🚀
+              Launch BTC Prediction Market
             </button>
           </Link>
 
+          {/* TRANSFER */}
           <TransferForm
             walletAddress={wallet.chainId}
             balance={wallet.balance}
