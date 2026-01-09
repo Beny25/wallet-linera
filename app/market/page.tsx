@@ -1,7 +1,7 @@
 // app/market/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast, Toaster } from "react-hot-toast";
 
@@ -13,161 +13,249 @@ type Wallet = {
 
 type Side = "UP" | "DOWN";
 
-const MARKET_CHAIN_ID = "f871bc86b3fc1fbdb0e5a7aa505f974fa0468878606edef8683fdd2489f8c8db";
+type BetState = {
+  side: Side;
+  amount: string;
+  entryPrice: number;
+  expiresAt: number;
+};
+
+const BET_DURATION = 60; // seconds
 
 export default function MarketPage() {
   const router = useRouter();
 
-  const [wallet, setWallet] = useState<Wallet | null>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("wallet");
-      return saved ? JSON.parse(saved) : null;
-    }
-    return null;
-  });
-
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [btcPrice, setBtcPrice] = useState<number | null>(null);
   const [side, setSide] = useState<Side | null>(null);
   const [amount, setAmount] = useState("");
-  const [btcPrice, setBtcPrice] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("btcPrice") || "Loading...";
-    }
-    return "Loading...";
-  });
 
-  /* ---------------- BTC PRICE FETCH (Coingecko) ---------------- */
+  const [bet, setBet] = useState<BetState | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [result, setResult] = useState<"WIN" | "LOSE" | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  /* ---------------- LOAD WALLET ---------------- */
   useEffect(() => {
-    const fetchPrice = async () => {
-      try {
-        const res = await fetch(
-          "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
-        );
-        if (!res.ok) throw new Error("Network response was not ok");
-        const data = await res.json();
-        const formatted = parseFloat(data.bitcoin.usd).toLocaleString("en-US", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        });
-        setBtcPrice(formatted);
-        localStorage.setItem("btcPrice", formatted);
-      } catch (err) {
-        console.error("Failed to fetch BTC price:", err);
-        const lastPrice = localStorage.getItem("btcPrice") || "0.00";
-        setBtcPrice(lastPrice);
-      }
-    };
+    const saved = localStorage.getItem("wallet");
+    if (saved) setWallet(JSON.parse(saved));
 
-    fetchPrice();
-    const interval = setInterval(fetchPrice, 10000); // update tiap 10 detik
-    return () => clearInterval(interval);
+    const betSaved = localStorage.getItem("activeBet");
+    if (betSaved) setBet(JSON.parse(betSaved));
   }, []);
 
-  /* ---------------- PLACE BET (DEV MODE) ---------------- */
-  const placeBet = async () => {
-    toast('⚠️ Sorry! This feature is under development.', {
-      style: { background: '#333', color: '#fff' },
-    });
+  /* ---------------- BTC PRICE ---------------- */
+  const fetchPrice = async () => {
+    try {
+      const res = await fetch(
+        "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
+      );
+      const data = await res.json();
+      setBtcPrice(data.bitcoin.usd);
+    } catch {}
   };
 
-  /* ---------------- CLIPBOARD ---------------- */
-  const copy = async (text: string, label: string) => {
+  useEffect(() => {
+    fetchPrice();
+    const i = setInterval(fetchPrice, 10_000);
+    return () => clearInterval(i);
+  }, []);
+
+  /* ---------------- COUNTDOWN ---------------- */
+  useEffect(() => {
+    if (!bet) return;
+
+    const interval = setInterval(() => {
+      const left = Math.max(
+        0,
+        Math.floor((bet.expiresAt - Date.now()) / 1000)
+      );
+      setTimeLeft(left);
+
+      if (left === 0) {
+        clearInterval(interval);
+        resolveBet();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [bet]);
+
+  /* ---------------- PLACE BET ---------------- */
+  const placeBet = async () => {
+    if (!wallet || !side || !amount || !btcPrice) return;
+
     try {
-      await navigator.clipboard.writeText(text);
-      toast.success(`${label} copied 📋`);
+      setLoading(true);
+
+      const res = await fetch(process.env.NEXT_PUBLIC_BET_API!, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: wallet.chainId,
+          side,
+          amount,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Bet failed");
+
+      const expiresAt = Date.now() + BET_DURATION * 1000;
+
+      const betData: BetState = {
+        side,
+        amount,
+        entryPrice: btcPrice,
+        expiresAt,
+      };
+
+      setBet(betData);
+      localStorage.setItem("activeBet", JSON.stringify(betData));
+      toast.success("Bet placed 🚀");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ---------------- RESOLVE ---------------- */
+  const resolveBet = () => {
+    if (!bet || !btcPrice) return;
+
+    const win =
+      (bet.side === "UP" && btcPrice > bet.entryPrice) ||
+      (bet.side === "DOWN" && btcPrice < bet.entryPrice);
+
+    setResult(win ? "WIN" : "LOSE");
+    localStorage.removeItem("activeBet");
+
+    toast(win ? "🎉 YOU WIN!" : "😭 YOU LOSE");
+  };
+
+  /* ---------------- CLAIM ---------------- */
+  const claim = async () => {
+    if (!wallet) return;
+
+    try {
+      const res = await fetch(process.env.NEXT_PUBLIC_CLAIM_API!, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: wallet.chainId,
+        }),
+      });
+
+      const data = await res.json();
+      setWallet({ ...wallet, balance: data.balance });
+      localStorage.setItem(
+        "wallet",
+        JSON.stringify({ ...wallet, balance: data.balance })
+      );
+
+      toast.success("Reward claimed 💰");
     } catch {
-      toast.error("Copy failed");
+      toast.error("Claim failed");
     }
   };
 
   /* ---------------- UI ---------------- */
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <Toaster position="top-right" />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <Toaster />
+      <div className="w-full max-w-md bg-white p-6 rounded-2xl shadow space-y-4">
 
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-5">
-
-        {/* HEADER */}
-        <div className="flex items-center justify-between border-b pb-3">
-          <h1 className="text-xl font-bold text-gray-800">BTC Prediction Market</h1>
-          <button
-            onClick={() => router.push("/")}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            ← Back to Wallet
+        <div className="flex justify-between items-center">
+          <h1 className="text-xl font-bold">BTC Prediction</h1>
+          <button onClick={() => router.push("/")} className="text-blue-600 text-sm">
+            ← Wallet
           </button>
         </div>
 
-        {/* BTC PRICE */}
         <div className="text-center">
-          <p className="text-xs text-gray-500">Current BTC/USD Price</p>
-          <p className="text-3xl font-extrabold text-gray-900">
-            ${btcPrice || "Loading..."}
+          <p className="text-xs text-gray-500">BTC / USD</p>
+          <p className="text-3xl font-extrabold">
+            ${btcPrice?.toLocaleString() ?? "..."}
           </p>
         </div>
 
-        {/* WALLET INFO */}
-        <div className="bg-blue-50 rounded-xl p-3 text-sm space-y-1">
-          <p>
-            <span className="font-semibold text-blue-800">Your Chain ID:</span>{" "}
-            <span className="break-all">{wallet?.chainId || "Not Connected"}</span>
+        <div className="bg-blue-50 rounded-lg p-3 text-sm">
+          <p className="break-all">
+            <b>Chain:</b> {wallet?.chainId ?? "-"}
           </p>
           <p>
-            <span className="font-semibold text-blue-800">Balance:</span>{" "}
-            <span className="text-green-600 font-extrabold">{wallet?.balance ?? "0.0"}</span>
+            <b>Balance:</b>{" "}
+            <span className="text-green-600 font-bold">
+              {wallet?.balance ?? "0"}
+            </span>
           </p>
         </div>
 
-        {/* SIDE SELECT */}
-        <div className="flex gap-3">
-          <button
-            onClick={() => setSide("UP")}
-            className={`flex-1 py-3 rounded-xl text-lg font-bold transition ${
-              side === "UP"
-                ? "bg-green-600 text-white shadow-lg shadow-green-300"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-            disabled={!wallet}
-          >
-            📈 UP
-          </button>
+        {!bet && (
+          <>
+            <div className="flex gap-3">
+              {(["UP", "DOWN"] as Side[]).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSide(s)}
+                  className={`flex-1 py-3 rounded-xl font-bold ${
+                    side === s
+                      ? s === "UP"
+                        ? "bg-green-600 text-white"
+                        : "bg-red-600 text-white"
+                      : "bg-gray-100"
+                  }`}
+                >
+                  {s === "UP" ? "📈 UP" : "📉 DOWN"}
+                </button>
+              ))}
+            </div>
 
-          <button
-            onClick={() => setSide("DOWN")}
-            className={`flex-1 py-3 rounded-xl text-lg font-bold transition ${
-              side === "DOWN"
-                ? "bg-red-600 text-white shadow-lg shadow-red-300"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-            disabled={!wallet}
-          >
-            📉 DOWN
-          </button>
-        </div>
+            <input
+              type="number"
+              placeholder="Amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full border rounded-xl px-4 py-3"
+            />
 
-        {/* AMOUNT INPUT */}
-        <input
-          type="number"
-          min="0"
-          placeholder="Bet amount (in Linera Tokens)"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:ring-blue-500 focus:border-blue-500"
-          disabled={!wallet}
-        />
+            <button
+              onClick={placeBet}
+              disabled={loading || !side || !amount}
+              className="w-full bg-black text-white py-3 rounded-xl font-bold disabled:opacity-50"
+            >
+              Place Bet
+            </button>
+          </>
+        )}
 
-        {/* PLACE BET BUTTON */}
-        <button
-          onClick={placeBet}
-          disabled={!wallet || !side || !amount}
-          className="w-full bg-black text-white py-3 rounded-xl text-lg font-bold disabled:opacity-50 transition duration-150"
-        >
-          {`Bet ${side || '...'} ${amount || '0'} Tokens`}
-        </button>
+        {bet && timeLeft !== null && timeLeft > 0 && (
+          <div className="text-center font-bold text-orange-600">
+            ⏳ Resolving in {timeLeft}s
+          </div>
+        )}
 
-        <p className="text-center text-xs text-gray-500 pt-2">
-          Your bet is a real on-chain transfer to the Market Chain ID.
-        </p>
+        {result && (
+          <div className="text-center space-y-3">
+            <p
+              className={`text-2xl font-extrabold ${
+                result === "WIN" ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {result === "WIN" ? "🎉 YOU WIN!" : "😭 YOU LOSE"}
+            </p>
+
+            {result === "WIN" && (
+              <button
+                onClick={claim}
+                className="w-full bg-green-600 text-white py-3 rounded-xl font-bold"
+              >
+                Claim Reward
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
-          }
+}
