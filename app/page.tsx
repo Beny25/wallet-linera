@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // ✅ Import router
+import { useRouter } from "next/navigation";
 
 import HeaderBanner from "../components/HeaderBanner";
 import Footer from "../components/Footer";
@@ -23,16 +23,35 @@ type Wallet = {
 /* ================= PAGE ================= */
 
 export default function Home() {
-  const router = useRouter(); // ✅ Inisialisasi router
-  const [wallet, setWallet] = useState<Wallet | null>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("wallet");
-      return saved ? JSON.parse(saved) : null;
-    }
-    return null;
-  });
+  const router = useRouter();
 
+  /* ---------- MOUNT GUARD ---------- */
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  /* ---------- STATE ---------- */
+  const [wallet, setWallet] = useState<Wallet | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(false);
+
+  /* ---------- LOAD WALLET (CLIENT ONLY) ---------- */
+  useEffect(() => {
+    const saved = localStorage.getItem("wallet");
+    if (saved) {
+      try {
+        setWallet(JSON.parse(saved));
+      } catch {
+        console.error("Invalid wallet data");
+        localStorage.removeItem("wallet");
+      }
+    }
+  }, []);
+
+  /* ---------- EARLY RETURN ---------- */
+  if (!mounted) return null;
+
 
   /* -------- HELPERS -------- */
 
