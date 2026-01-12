@@ -223,11 +223,12 @@ export default function Home() {
           </div>
 
           {/* MARKET */}
-          <Link href="/market" className="block mt-2">
-            <button className="w-full bg-purple-600 text-white p-3 rounded-xl font-bold hover:bg-purple-700 transition">
-              Launch BTC Prediction Market
-            </button>
-          </Link>
+          <button
+        onClick={() => router.push("/market")}
+        className="w-full bg-purple-600 text-white p-3 rounded-xl font-bold hover:bg-purple-700 transition"
+        >
+        Launch BTC Prediction Market
+         </button>
 
           {/* TRANSFER */}
           <TransferForm
